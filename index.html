@@ -72,7 +72,8 @@ h1{font-size:40px;margin:26px 0 2px;text-align:center;letter-spacing:3px;text-sh
     🎁 Clear a chamber, pick an upgrade. Boss every 5 chambers.<br>
     🏆 How deep can you go?
   </div>
-  <button class="btn big" onclick="startGame()">ENTER THE GAUNTLET</button>
+  <button class="btn big" onclick="startGame()">⚔️ CURRENT UNIT</button>
+  <button class="btn" onclick="showArchive()">📦 ARCHIVE VAULT</button>
   <p class="sub" id="bestline"></p>
 </div>
 
@@ -100,6 +101,13 @@ h1{font-size:40px;margin:26px 0 2px;text-align:center;letter-spacing:3px;text-sh
   <div id="upcards"></div>
 </div>
 
+<div class="screen" id="s-archive">
+  <h1 style="font-size:30px;">📦 ARCHIVE<br>VAULT</h1>
+  <p class="sub">old topics, still playable</p>
+  <div id="archivelist"></div>
+  <button class="btn" onclick="show('s-start')">← BACK</button>
+</div>
+
 <div class="screen" id="s-over">
   <h1 style="font-size:34px;">💀 YOU DIED</h1>
   <p class="sub" id="overflavor"></p>
@@ -123,58 +131,122 @@ function mkQ(topic,q,correct,cands){
   return {topic,q,choices,answer:choices.indexOf(correct)};
 }
 
-// ---------- problem generators (Unit 1B) ----------
-function gMidpoint(){
-  const x1=R(-10,10),y1=R(-10,10),x2=R(-10,10),y2=R(-10,10);
-  const mx=(x1+x2)/2,my=(y1+y2)/2;
-  return mkQ('MIDPOINT',`Find the midpoint of the segment with endpoints ${PT(x1,y1)} and ${PT(x2,y2)}.`,PT(mx,my),
-    [PT(x1+x2,y1+y2),PT((x1-x2)/2,(y1-y2)/2),PT(mx+1,my),PT(mx,my-1),PT(-mx,my),PT(mx+2,my+2)]);
-}
-const TRIP=[[3,4,5],[6,8,10],[5,12,13],[8,15,17],[9,12,15],[7,24,25],[12,16,20],[20,21,29]];
-function gDistance(){
-  const t=pick(TRIP),dx=t[0]*pick([1,-1]),dy=t[1]*pick([1,-1]),h=t[2];
-  const x1=R(-8,8),y1=R(-8,8),x2=x1+dx,y2=y1+dy;
-  return mkQ('DISTANCE',`Find the exact distance between ${PT(x1,y1)} and ${PT(x2,y2)}.`,String(h),
-    [String(Math.abs(dx)+Math.abs(dy)),String(Math.abs(Math.abs(dx)-Math.abs(dy))),String(h+1),String(h-1),String(h+2),String(2*h)]);
-}
-function gMissing(){
-  const mx=R(-8,8),my=R(-8,8),rx=R(-8,8),ry=R(-8,8);
-  const sx=2*mx-rx,sy=2*my-ry;
-  return mkQ('MIDPOINT',`M ${PT(mx,my)} is the midpoint of segment RS. R is ${PT(rx,ry)}. Find S.`,PT(sx,sy),
-    [PT(mx-rx,my-ry),PT(rx-mx,ry-my),PT(sx+2,sy),PT(sx,sy+2),PT(2*mx+rx,2*my+ry)]);
-}
-function gPartition(){
-  const s=pick([2,3,4,5]),a=R(1,s-1),b=s-a;
-  const x1=R(-8,8),y1=R(-8,8);
-  let k1=R(-3,3),k2=R(-3,3);if(k1===0)k1=2;if(k2===0)k2=-2;
-  const vx=s*k1,vy=s*k2,x2=x1+vx,y2=y1+vy;
-  const px=x1+a*k1,py=y1+a*k2;
-  return mkQ('PARTITION',`Point P partitions directed segment AB — A${PT(x1,y1)}, B${PT(x2,y2)} — with AP:PB = ${a}:${b}. Find P.`,PT(px,py),
-    [PT(x1+b*k1,y1+b*k2),PT((x1+x2)/2,(y1+y2)/2),PT(px+1,py),PT(px,py+1),PT(x2,y2)]);
-}
-const sgn=n=>n<0?`${n}`:`+${n}`;
-function gSegAdd(){
-  let x,a,b,c,d,e,f,rs,st,rt;
-  do{
-    x=R(2,9);a=R(2,9);c=R(2,9);e=R(2,9);
-    if(e===a+c)e+=1; // avoid identity: RS+ST must not equal RT for all x
-    b=R(-9,9);d=R(-9,9);
-    f=(a+c-e)*x+(b+d);
-    rs=a*x+b;st=c*x+d;rt=e*x+f;
-  }while(rs<=0||st<=0||rt<=0||b===0||d===0||f===0);
-  const q=`S is between R and T. RS = ${a}x${sgn(b)}, ST = ${c}x${sgn(d)}, RT = ${e}x${sgn(f)}. Solve for x.`;
-  const cd=[x+1,x-1,x+2,x-2].filter(v=>v>0&&v!==x).map(String);
-  return mkQ('SEGMENTS',q,String(x),cd);
-}
-const SQF=[2,3,5,6,7,10,11,13];
-function gRadical(){
-  const k=R(2,6),m=pick(SQF),n=k*k*m,cor=`${k}√${m}`;
-  const cd=[`${k+1}√${m}`,`${k}√${m+1}`,`${k-1}√${m}`,`${2*k}√${m}`,`${k}√${m+2}`];
-  for(let d=2;d<k;d++)if(k%d===0)cd.push(`${k/d}√${d*d*m}`);
-  return mkQ('RADICALS',`Simplify √${n}.`,cor,cd);
-}
-const GEN=[gMidpoint,gDistance,gMissing,gPartition,gSegAdd,gRadical];
-function newProblem(){return pick(GEN)();}
+// ---------- topic system ----------
+// Problem generators live in topics/*.js (see topics/_TEMPLATE.js).
+// build.py inlines the manifest + topic files below at build time.
+const TOPICS={};
+function registerTopic(t){TOPICS[t.id]=t;}
+const MANIFEST={"active": ["midpoint", "distance", "missing-endpoint", "partition", "seg-add", "radicals"], "archive": []};
+// ---- topic: midpoint ----
+// Midpoint of a segment from two endpoints.
+registerTopic({
+  id: 'midpoint',
+  name: 'Midpoint Formula',
+  tag: 'MIDPOINT',
+  units: ['1B'],
+  added: '2026-10-07',
+  generate: function(){
+    const x1=R(-10,10),y1=R(-10,10),x2=R(-10,10),y2=R(-10,10);
+    const mx=(x1+x2)/2,my=(y1+y2)/2;
+    return mkQ('MIDPOINT',`Find the midpoint of the segment with endpoints ${PT(x1,y1)} and ${PT(x2,y2)}.`,PT(mx,my),
+      [PT(x1+x2,y1+y2),PT((x1-x2)/2,(y1-y2)/2),PT(mx+1,my),PT(mx,my-1),PT(-mx,my),PT(mx+2,my+2)]);
+  }
+});
+
+// ---- topic: distance ----
+// Exact distance between two points (integer answers via Pythagorean triples).
+registerTopic({
+  id: 'distance',
+  name: 'Distance Formula',
+  tag: 'DISTANCE',
+  units: ['1B'],
+  added: '2026-10-07',
+  generate: function(){
+    const TRIP=[[3,4,5],[6,8,10],[5,12,13],[8,15,17],[9,12,15],[7,24,25],[12,16,20],[20,21,29]];
+    const t=pick(TRIP),dx=t[0]*pick([1,-1]),dy=t[1]*pick([1,-1]),h=t[2];
+    const x1=R(-8,8),y1=R(-8,8),x2=x1+dx,y2=y1+dy;
+    return mkQ('DISTANCE',`Find the exact distance between ${PT(x1,y1)} and ${PT(x2,y2)}.`,String(h),
+      [String(Math.abs(dx)+Math.abs(dy)),String(Math.abs(Math.abs(dx)-Math.abs(dy))),String(h+1),String(h-1),String(h+2),String(2*h)]);
+  }
+});
+
+// ---- topic: missing-endpoint ----
+// Find the missing endpoint given the midpoint and one endpoint.
+registerTopic({
+  id: 'missing-endpoint',
+  name: 'Missing Endpoint',
+  tag: 'MIDPOINT',
+  units: ['1B'],
+  added: '2026-10-07',
+  generate: function(){
+    const mx=R(-8,8),my=R(-8,8),rx=R(-8,8),ry=R(-8,8);
+    const sx=2*mx-rx,sy=2*my-ry;
+    return mkQ('MIDPOINT',`M ${PT(mx,my)} is the midpoint of segment RS. R is ${PT(rx,ry)}. Find S.`,PT(sx,sy),
+      [PT(mx-rx,my-ry),PT(rx-mx,ry-my),PT(sx+2,sy),PT(sx,sy+2),PT(2*mx+rx,2*my+ry)]);
+  }
+});
+
+// ---- topic: partition ----
+// Partition a directed segment in a given ratio (integer coordinates by construction).
+registerTopic({
+  id: 'partition',
+  name: 'Partitioning a Segment',
+  tag: 'PARTITION',
+  units: ['1B'],
+  added: '2026-10-07',
+  generate: function(){
+    const s=pick([2,3,4,5]),a=R(1,s-1),b=s-a;
+    const x1=R(-8,8),y1=R(-8,8);
+    let k1=R(-3,3),k2=R(-3,3);if(k1===0)k1=2;if(k2===0)k2=-2;
+    const vx=s*k1,vy=s*k2,x2=x1+vx,y2=y1+vy;
+    const px=x1+a*k1,py=y1+a*k2;
+    return mkQ('PARTITION',`Point P partitions directed segment AB — A${PT(x1,y1)}, B${PT(x2,y2)} — with AP:PB = ${a}:${b}. Find P.`,PT(px,py),
+      [PT(x1+b*k1,y1+b*k2),PT((x1+x2)/2,(y1+y2)/2),PT(px+1,py),PT(px,py+1),PT(x2,y2)]);
+  }
+});
+
+// ---- topic: seg-add ----
+// Segment addition: solve for x (constructed so the equation is never an identity).
+registerTopic({
+  id: 'seg-add',
+  name: 'Segments and Congruence',
+  tag: 'SEGMENTS',
+  units: ['1B'],
+  added: '2026-10-07',
+  generate: function(){
+    let x,a,b,c,d,e,f,rs,st,rt;
+    do{
+      x=R(2,9);a=R(2,9);c=R(2,9);e=R(2,9);
+      if(e===a+c)e+=1; // avoid identity: RS+ST must not equal RT for all x
+      b=R(-9,9);d=R(-9,9);
+      f=(a+c-e)*x+(b+d);
+      rs=a*x+b;st=c*x+d;rt=e*x+f;
+    }while(rs<=0||st<=0||rt<=0||b===0||d===0||f===0);
+    const q=`S is between R and T. RS = ${a}x${sgn(b)}, ST = ${c}x${sgn(d)}, RT = ${e}x${sgn(f)}. Solve for x.`;
+    const cd=[x+1,x-1,x+2,x-2].filter(v=>v>0&&v!==x).map(String);
+    return mkQ('SEGMENTS',q,String(x),cd);
+  }
+});
+
+// ---- topic: radicals ----
+// Simplify radicals to simplest k√m form.
+registerTopic({
+  id: 'radicals',
+  name: 'Simplifying Radicals',
+  tag: 'RADICALS',
+  units: ['1B'],
+  added: '2026-10-07',
+  generate: function(){
+    const SQF=[2,3,5,6,7,10,11,13];
+    const k=R(2,6),m=pick(SQF),n=k*k*m,cor=`${k}√${m}`;
+    const cd=[`${k+1}√${m}`,`${k}√${m+1}`,`${k-1}√${m}`,`${2*k}√${m}`,`${k}√${m+2}`];
+    for(let d=2;d<k;d++)if(k%d===0)cd.push(`${k/d}√${d*d*m}`);
+    return mkQ('RADICALS',`Simplify √${n}.`,cor,cd);
+  }
+});
+
+function poolFor(ids){return ids.map(id=>TOPICS[id]).filter(t=>t&&t.generate);}
+function newProblem(){return pick(S.genPool).generate();}
 
 // ---------- audio ----------
 let AC=null,muted=false;
@@ -197,12 +269,31 @@ function show(id){document.querySelectorAll('.screen').forEach(e=>e.classList.re
 function best(){try{return JSON.parse(localStorage.getItem('geoGauntletBest')||'{"chamber":0,"streak":0}');}catch(e){return{chamber:0,streak:0};}}
 function saveBest(){const b=best();b.chamber=Math.max(b.chamber,S.chamber);b.streak=Math.max(b.streak,S.bestStreak);try{localStorage.setItem('geoGauntletBest',JSON.stringify(b));}catch(e){}}
 
-function startGame(){
+function newRun(genIds){
   initAudio();
+  if(!genIds||genIds.length===0){document.getElementById('feed')&&(document.getElementById('feed').textContent='no topics in this pool yet');return;}
   S={php:100,maxphp:100,chamber:0,streak:0,bestStreak:0,dmg:12,crit:0.15,shield:0,revive:false,streakRate:1,correct:0,total:0,kills:0};
+  S.genPool=poolFor(genIds);
   const b=best();
   document.getElementById('bestline').textContent=b.chamber>0?`best run: chamber ${b.chamber} · best streak ${b.streak}`:'';
   nextChamber();
+}
+function startGame(){newRun(MANIFEST.active.slice());}
+function showArchive(){
+  const box=document.getElementById('archivelist');box.innerHTML='';
+  if(MANIFEST.archive.length===0){
+    box.innerHTML='<p class="sub">the vault is empty — topics land here when their unit ends.</p>';
+  }
+  MANIFEST.archive.forEach(id=>{
+    const t=TOPICS[id];if(!t)return;
+    const b=document.createElement('button');b.className='btn';b.textContent='📦 '+t.name;
+    b.onclick=()=>newRun([id]);box.appendChild(b);
+  });
+  if(MANIFEST.archive.length>1){
+    const a=document.createElement('button');a.className='btn';a.textContent='🎲 PLAY ALL ARCHIVED';
+    a.onclick=()=>newRun(MANIFEST.archive.slice());box.appendChild(a);
+  }
+  show('s-archive');
 }
 function monsterFor(ch){
   const isBoss=ch%5===0;
