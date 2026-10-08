@@ -64,10 +64,14 @@ h1{font-size:40px;margin:26px 0 2px;text-align:center;letter-spacing:3px;text-sh
 .btn.tgl.on{opacity:1;border-color:#ffd76a}
 .btn.small{font-size:16px;padding:6px 10px;margin:2px}
 #gatename,#adminkey{outline:none}
+#testbanner{position:fixed;top:0;left:0;right:0;z-index:100;background:#2a2410;border-bottom:2px solid #ffd76a;color:#ffd76a;overflow:hidden;white-space:nowrap;font-size:14px;padding:7px 0;}
+#testbanner .tick{display:inline-block;padding-left:100%;animation:ggtick 14s linear infinite;}
+@keyframes ggtick{0%{transform:translateX(0);}100%{transform:translateX(-100%);}}
+body.has-banner #app{padding-top:46px;}
 </style>
 </head>
 <body>
-<div id="testbanner" style="display:none;background:#2a2410;border-bottom:2px solid #ffd76a;color:#ffd76a;text-align:center;padding:6px 10px;font-size:14px"></div>
+<div id="testbanner" style="display:none"></div>
 <div id="app">
 <button class="mutebtn" id="mutebtn" onclick="toggleMute()">🔊</button>
 
@@ -694,16 +698,18 @@ function decide(uid,decision,el){
 var BANNER={"date": "2026-10-14", "label": "Unit 1B test"};
 function renderBanner(){
   var el=document.getElementById('testbanner');if(!el)return;
-  if(!BANNER||!BANNER.date||!BANNER.label){el.style.display='none';return;}
+  function hide(){el.style.display='none';document.body.classList.remove('has-banner');}
+  if(!BANNER||!BANNER.date||!BANNER.label){hide();return;}
   var d=new Date(BANNER.date+'T12:00:00');
-  if(isNaN(d.getTime())){el.style.display='none';return;}
+  if(isNaN(d.getTime())){hide();return;}
   var now=new Date();now.setHours(0,0,0,0);
   var days=Math.round((d-now)/86400000);
-  if(days<0){el.style.display='none';return;}
+  if(days<0){hide();return;}
   var datestr=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   var when=days===0?'today':days===1?'tomorrow':'in '+days+' days';
-  el.innerHTML='📝 <b>'+esc(BANNER.label)+'</b> &middot; '+datestr+' ('+when+')';
+  el.innerHTML='<span class="tick">📝 <b>'+esc(BANNER.label)+'</b> &middot; '+datestr+' ('+when+')</span>';
   el.style.display='';
+  document.body.classList.add('has-banner');
 }
 
 initGate();
