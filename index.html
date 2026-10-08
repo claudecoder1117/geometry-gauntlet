@@ -55,6 +55,15 @@ h1{font-size:40px;margin:26px 0 2px;text-align:center;letter-spacing:3px;text-sh
 .howto b{color:#fff;}
 .mutebtn{position:absolute;top:10px;right:12px;background:#1e2450;border:1px solid #2c3470;color:#fff;border-radius:10px;padding:6px 10px;font-size:16px;cursor:pointer;}
 .bossbanner{text-align:center;font-size:15px;font-weight:800;color:#ff9f1c;letter-spacing:2px;margin:2px 0;animation:firepulse .6s infinite alternate;}
+.brow{display:flex;align-items:center;gap:10px;background:#141a33;border:2px solid #2a3560;border-radius:10px;padding:8px 12px;margin:6px 0;text-align:left}
+.bmedal{font-size:20px;min-width:34px;text-align:center}
+.bname{flex:1;font-size:16px}
+.bval{font-weight:bold;color:#ffd76a}
+.bsub{font-size:12px;color:#8b95c9}
+.btn.tgl{opacity:.45}
+.btn.tgl.on{opacity:1;border-color:#ffd76a}
+.btn.small{font-size:16px;padding:6px 10px;margin:2px}
+#gatename,#adminkey{outline:none}
 </style>
 </head>
 <body>
@@ -74,6 +83,10 @@ h1{font-size:40px;margin:26px 0 2px;text-align:center;letter-spacing:3px;text-sh
   </div>
   <button class="btn big" onclick="startGame()">⚔️ CURRENT UNIT</button>
   <button class="btn" onclick="showArchive()">📦 ARCHIVE VAULT</button>
+  <button class="btn" onclick="openBoard()">🏆 PERIOD 2 LEADERBOARD</button>
+  <button class="btn" onclick="shareLink()">🔗 INVITE CLASSMATES</button>
+  <p class="sub" id="sharemsg"></p>
+  <p class="sub" id="idline"></p>
   <p class="sub" id="bestline"></p>
 </div>
 
@@ -99,6 +112,52 @@ h1{font-size:40px;margin:26px 0 2px;text-align:center;letter-spacing:3px;text-sh
   <h1 style="font-size:30px;">🏆 CHAMBER<br>CLEARED!</h1>
   <p class="sub">choose your reward</p>
   <div id="upcards"></div>
+</div>
+
+<div class="screen" id="s-gate">
+  <h1 style="font-size:30px;">⚔️ GAUNTLET</h1>
+  <p class="sub">period 2 leaderboard</p>
+  <div class="card">
+    <b>Enter your first name to join.</b><br><br>
+    <input id="gatename" maxlength="20" placeholder="first name" autocomplete="off"
+      style="font-size:20px;padding:10px;width:80%;text-align:center;background:#0d1021;color:#e8ecff;border:2px solid #3b4a8c;border-radius:10px;font-family:inherit;">
+    <div style="height:12px"></div>
+    <button class="btn big" id="gatebtn" onclick="doRegister()">ENTER</button>
+    <p class="sub" id="gateerr" style="color:#ff8080"></p>
+    <p class="sub">period 2 only — every signup needs oliver's approval.<br>your name is saved on this device.</p>
+  </div>
+</div>
+
+<div class="screen" id="s-board">
+  <h1 style="font-size:30px;">🏆 PERIOD 2<br>LEADERBOARD</h1>
+  <div>
+    <button class="btn tgl" data-r="day" onclick="setBoard('day')">today</button>
+    <button class="btn tgl" data-r="week" onclick="setBoard('week')">this week</button>
+    <button class="btn tgl" data-r="ever" onclick="setBoard('ever')">ever</button>
+  </div>
+  <div>
+    <button class="btn tgl" data-m="correct" onclick="setBoard(null,'correct')">✅ correct</button>
+    <button class="btn tgl" data-m="seconds" onclick="setBoard(null,'seconds')">⏱️ time</button>
+  </div>
+  <div id="boardrows" style="margin-top:10px"></div>
+  <button class="btn" onclick="loadBoard()">↻ refresh</button>
+  <button class="btn" onclick="show('s-start')">← BACK</button>
+</div>
+
+<div class="screen" id="s-admin">
+  <h1 style="font-size:30px;">🛡️ ADMIN</h1>
+  <div id="adminlogin">
+    <input id="adminkey" type="password" placeholder="admin key" autocomplete="off"
+      style="font-size:20px;padding:10px;width:80%;text-align:center;background:#0d1021;color:#e8ecff;border:2px solid #3b4a8c;border-radius:10px;font-family:inherit;">
+    <div style="height:12px"></div>
+    <button class="btn" onclick="adminLogin()">UNLOCK</button>
+    <p class="sub" id="adminerr" style="color:#ff8080"></p>
+  </div>
+  <div id="adminbox" style="display:none">
+    <p class="sub">pending signups</p>
+    <div id="pendinglist"></div>
+  </div>
+  <button class="btn" onclick="show('s-start')">← BACK</button>
 </div>
 
 <div class="screen" id="s-archive">
@@ -273,7 +332,7 @@ function newRun(genIds){
   initAudio();
   if(!genIds||genIds.length===0){document.getElementById('feed')&&(document.getElementById('feed').textContent='no topics in this pool yet');return;}
   S={php:100,maxphp:100,chamber:0,streak:0,bestStreak:0,dmg:12,crit:0.15,shield:0,revive:false,streakRate:1,correct:0,total:0,kills:0};
-  S.genPool=poolFor(genIds);
+  S.genPool=poolFor(genIds);applyRecruitBuff();
   const b=best();
   document.getElementById('bestline').textContent=b.chamber>0?`best run: chamber ${b.chamber} · best streak ${b.streak}`:'';
   nextChamber();
@@ -351,7 +410,7 @@ function answer(i,btn){
   const btns=[...document.getElementById('answers').children];
   btns.forEach(b=>b.onclick=null);
   if(i===prob.answer){
-    S.correct++;S.streak++;S.bestStreak=Math.max(S.bestStreak,S.streak);
+    S.correct++;LB.correct++;S.streak++;S.bestStreak=Math.max(S.bestStreak,S.streak);
     btn.classList.add('right');
     const streakM=1+Math.min(S.streak,12)*0.07*S.streakRate;
     const isCrit=Math.random()<S.crit;
@@ -431,6 +490,166 @@ function gameOver(){
   show('s-over');
 }
 (function(){const b=best();if(b.chamber>0)document.getElementById('bestline').textContent=`best run: chamber ${b.chamber} · best streak ${b.streak}`;})();
+</script>
+<script>
+// ---------- Period 2 leaderboard client ----------
+var BACKEND="https://script.google.com/macros/s/AKfycbz0Lydglq2D97iY_1gIZiL6n7cEVELIV58_E7uolNAgR8YtisvJxjrEkBLMWFIEneEX/exec";
+var ME=null; try{ME=JSON.parse(localStorage.getItem('gg_id')||'null');}catch(e){ME=null;}
+var PENDING_REF='', ADMIN_MODE=false;
+try{var _qs=new URLSearchParams(location.search);PENDING_REF=_qs.get('ref')||'';ADMIN_MODE=_qs.get('admin')==='1';}catch(e){}
+var LB={correct:0,seconds:0};
+var BOARD={range:'day',metric:'correct'};
+var ADMIN_KEY='';
+var _poll=null;
+
+function etDate(){try{return new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'});}catch(e){return new Date().toISOString().slice(0,10);}}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmtTime(sec){var m=Math.round(sec/60);if(m<60)return m+' min';var h=Math.floor(m/60);return h+'h '+(m%60)+'m';}
+
+// JSONP (Apps Script web apps don't send CORS headers)
+function api(action,params,cb){
+  if(!BACKEND){if(cb)cb({ok:false,error:'no backend'});return;}
+  var c='ggcb'+Math.random().toString(36).slice(2);
+  var done=false,s=document.createElement('script');
+  function fin(d){if(done)return;done=true;try{delete window[c];}catch(e){}if(s.parentNode)s.parentNode.removeChild(s);if(cb)cb(d||{ok:false});}
+  window[c]=fin;
+  s.onerror=function(){fin({ok:false,error:'network'});};
+  setTimeout(function(){fin({ok:false,error:'timeout'});},15000);
+  var q='action='+encodeURIComponent(action)+'&callback='+encodeURIComponent(c);
+  for(var k in params){q+='&'+encodeURIComponent(k)+'='+encodeURIComponent(params[k]==null?'':params[k]);}
+  s.src=BACKEND+'?'+q;
+  document.body.appendChild(s);
+}
+
+function saveMe(){try{localStorage.setItem('gg_id',JSON.stringify(ME));}catch(e){}}
+
+function updateIdUI(){
+  var el=document.getElementById('idline');if(!el)return;
+  if(!ME||!BACKEND){el.textContent='';return;}
+  var t='playing as '+ME.name;
+  if(ME.status==='pending')t+=' · ⏳ waiting for approval — you can play, the leaderboard unlocks after';
+  if(ME.recruits>0)t+=' · 👥 '+ME.recruits+' recruit'+(ME.recruits>1?'s':'')+' (+'+(2*Math.min(ME.recruits,5))+' dmg)';
+  el.textContent=t;
+}
+
+function refreshMe(cb){
+  if(!ME||!BACKEND){if(cb)cb();return;}
+  api('me',{uid:ME.uid},function(d){
+    if(d&&d.ok){ME.status=d.status;ME.recruits=d.recruits||0;saveMe();updateIdUI();}
+    if(cb)cb(d);
+  });
+}
+
+function startPoll(){
+  if(_poll||!BACKEND)return;
+  _poll=setInterval(function(){if(ME&&ME.status==='pending')refreshMe();},30000);
+}
+
+function doRegister(){
+  var inp=document.getElementById('gatename');
+  var name=(inp.value||'').trim().replace(/\s+/g,' ').slice(0,20);
+  if(!name){inp.focus();return;}
+  var btn=document.getElementById('gatebtn');btn.disabled=true;btn.textContent='summoning…';
+  api('register',{name:name,ref:PENDING_REF},function(d){
+    if(d&&d.ok){
+      ME={uid:d.uid,name:name,status:'pending',recruits:0};saveMe();
+      show('s-start');updateIdUI();startPoll();
+    }else{
+      btn.disabled=false;btn.textContent='ENTER';
+      document.getElementById('gateerr').textContent='hmm, that didn\u2019t work — try again.';
+    }
+  });
+}
+
+function initGate(){
+  if(ADMIN_MODE){show('s-admin');return;}
+  if(!BACKEND)return;
+  if(!ME){show('s-gate');}
+  else{refreshMe();startPoll();updateIdUI();}
+}
+
+// ---- stat tracking ----
+setInterval(function(){
+  if(!ME||ME.status!=='approved'||!BACKEND)return;
+  var b=document.getElementById('s-battle');
+  if(b&&b.classList.contains('on')&&document.visibilityState==='visible')LB.seconds++;
+},1000);
+setInterval(function(){flushLB(false);},30000);
+window.addEventListener('pagehide',function(){flushLB(true);});
+function flushLB(beacon){
+  if(!ME||ME.status!=='approved'||!BACKEND)return;
+  if(!LB.correct&&!LB.seconds)return;
+  var p={uid:ME.uid,date:etDate(),correct:LB.correct,seconds:LB.seconds};
+  LB.correct=0;LB.seconds=0;
+  if(beacon&&navigator.sendBeacon){
+    navigator.sendBeacon(BACKEND+'?action=submit&uid='+encodeURIComponent(p.uid)+'&date='+p.date+'&correct='+p.correct+'&seconds='+p.seconds);
+  }else{api('submit',p,function(){});}
+}
+
+// recruit damage buff: +2 per approved recruit, cap +10
+function applyRecruitBuff(){
+  if(ME&&ME.recruits>0)S.dmg+=2*Math.min(ME.recruits,5);
+}
+
+// ---- leaderboard board ----
+function openBoard(){if(ME&&ME.status!=='approved'){document.getElementById('boardrows').innerHTML='<p class="sub">⏳ waiting for approval — the board unlocks after.</p>';show('s-board');return;}show('s-board');loadBoard();}
+function setBoard(r,m){if(r)BOARD.range=r;if(m)BOARD.metric=m;loadBoard();}
+function loadBoard(){
+  var box=document.getElementById('boardrows');if(!box)return;
+  box.innerHTML='<p class="sub">loading…</p>';
+  var btns=document.querySelectorAll('#s-board .tgl');
+  for(var i=0;i<btns.length;i++){var b=btns[i];b.classList.toggle('on',(b.getAttribute('data-r')===BOARD.range)||(b.getAttribute('data-m')===BOARD.metric));}
+  api('board',{range:BOARD.range,metric:BOARD.metric},function(d){
+    if(!d||!d.ok||!d.rows||!d.rows.length){box.innerHTML='<p class="sub">no scores yet — be the first.</p>';return;}
+    var h='';
+    d.rows.forEach(function(r,i){
+      var medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.';
+      var val=BOARD.metric==='seconds'?fmtTime(r.value):r.value+' ✅';
+      var you=ME&&r.name===ME.name?' <b>(you)</b>':'';
+      var rec=r.recruits>0?' <span class="bsub">👥'+r.recruits+'</span>':'';
+      h+='<div class="brow"><span class="bmedal">'+medal+'</span><span class="bname">'+esc(r.name)+you+rec+'</span><span class="bval">'+val+'</span></div>';
+    });
+    box.innerHTML=h;
+  });
+}
+
+// ---- referrals ----
+function shareLink(){
+  var msg=document.getElementById('sharemsg');
+  if(!ME||!BACKEND){msg.textContent='sign in first.';return;}
+  var link=location.origin+location.pathname+'?ref='+ME.uid;
+  function done(ok){msg.textContent=ok?'link copied — send it to your class. +2 dmg per approved recruit (max +10).':'copy this link: '+link;}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(link).then(function(){done(true);},function(){done(false);});}
+  else{done(false);}
+}
+
+// ---- admin ----
+function adminLogin(){
+  var k=document.getElementById('adminkey').value;
+  api('pending',{key:k},function(d){
+    if(d&&d.ok){ADMIN_KEY=k;document.getElementById('adminbox').style.display='';renderPending(d.pending);}
+    else{document.getElementById('adminerr').textContent='wrong key.';}
+  });
+}
+function renderPending(list){
+  var box=document.getElementById('pendinglist');box.innerHTML='';
+  if(!list.length){box.innerHTML='<p class="sub">nobody waiting.</p>';return;}
+  list.forEach(function(u){
+    var d=document.createElement('div');d.className='brow';
+    var nm=document.createElement('span');nm.className='bname';nm.textContent=u.name+' · '+u.created;d.appendChild(nm);
+    var ok=document.createElement('button');ok.className='btn small';ok.textContent='✅';
+    ok.onclick=function(){decide(u.uid,'approve',d);};
+    var no=document.createElement('button');no.className='btn small';no.textContent='❌';
+    no.onclick=function(){decide(u.uid,'deny',d);};
+    d.appendChild(ok);d.appendChild(no);box.appendChild(d);
+  });
+}
+function decide(uid,decision,el){
+  api('decide',{key:ADMIN_KEY,uid:uid,decision:decision},function(d){if(d&&d.ok)el.remove();});
+}
+
+initGate();
+
 </script>
 </body>
 </html>
