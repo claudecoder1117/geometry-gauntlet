@@ -615,10 +615,15 @@ function initGate(){
 }
 
 // ---- stat tracking ----
+var SESS={secs:0};
 setInterval(function(){
-  if(!ME||ME.status!=='approved'||!BACKEND)return;
+  if(!ME||!BACKEND)return;
   var b=document.getElementById('s-battle');
-  if(b&&b.classList.contains('on')&&document.visibilityState==='visible')LB.seconds++;
+  if(b&&b.classList.contains('on')&&document.visibilityState==='visible'){
+    SESS.secs++;
+    if(ME.status==='approved')LB.seconds++;
+  }
+  maybeNudge();
 },1000);
 setInterval(function(){flushLB(false);},30000);
 window.addEventListener('pagehide',function(){flushLB(true);});
@@ -660,14 +665,40 @@ function loadBoard(){
 }
 
 // ---- referrals ----
-function shareLink(){
-  var msg=document.getElementById('sharemsg');
-  if(!ME||!BACKEND){msg.textContent='sign in first.';return;}
+function copyInviteLink(cb){
+  if(!ME||!BACKEND){if(cb)cb(false);return;}
   var link=location.origin+location.pathname+'?ref='+ME.uid;
-  function done(ok){msg.textContent=ok?'link copied — send it to your class. +2 dmg per approved recruit (max +10).':'copy this link: '+link;}
-  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(link).then(function(){done(true);},function(){done(false);});}
-  else{done(false);}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(link).then(function(){if(cb)cb(true,link);},function(){if(cb)cb(false,link);});
+  }else if(cb)cb(false,link);
 }
+function shareLink(){
+  var msg=document.getElementById('sharemsg');if(!msg)return;
+  if(!ME){msg.textContent='enter your name first.';return;}
+  copyInviteLink(function(ok,link){
+    msg.textContent=ok?'link copied — send it to your class. +2 dmg per approved recruit (max +10).':'copy this link: '+link;
+  });
+}
+
+// in-battle nudge: after 8+ questions and 2+ minutes, once per day.
+// always names the reward.
+function maybeNudge(){
+  if(!ME||ME.status!=='approved'||!BACKEND)return;
+  if(typeof S==='undefined'||!S)return;
+  var b=document.getElementById('s-battle');
+  if(!b||!b.classList.contains('on'))return;
+  var n=document.getElementById('nudge');if(!n||n.style.display!=='none')return;
+  try{if(localStorage.getItem('gg_nudge')===etDate())return;}catch(e){}
+  if(S.total>=8&&SESS.secs>=120){
+    n.style.display='';
+    try{localStorage.setItem('gg_nudge',etDate());}catch(e){}
+  }
+}
+function nudgeCopy(){
+  var m=document.getElementById('nudgemsg');
+  copyInviteLink(function(ok,link){if(m)m.textContent=ok?'copied — send it to your class.':'copy this: '+link;});
+}
+function nudgeClose(){var n=document.getElementById('nudge');if(n)n.style.display='none';}
 
 // ---- admin ----
 function adminLogin(){
@@ -716,5 +747,14 @@ initGate();
 renderBanner();
 
 </script>
+<div id="nudge" style="display:none;position:fixed;bottom:14px;left:14px;right:14px;z-index:200;background:#1e2450;border:2px solid #ffd76a;border-radius:14px;padding:12px 14px;box-shadow:0 8px 30px rgba(0,0,0,.6);">
+  <b>enjoying it? &#x1f50e;</b><br>
+  <span style="font-size:14px">share with classmates &mdash; every approved recruit earns you <b>+2 damage (max +10)</b>.</span>
+  <div style="display:flex;gap:8px;margin-top:8px">
+    <button class="btn small" style="flex:1" onclick="nudgeCopy()">&#x1f517; COPY INVITE LINK</button>
+    <button class="btn small" onclick="nudgeClose()">&#x2715;</button>
+  </div>
+  <p class="sub" id="nudgemsg" style="margin:6px 0 0"></p>
+</div>
 </body>
 </html>
