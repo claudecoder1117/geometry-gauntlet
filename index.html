@@ -67,6 +67,7 @@ h1{font-size:40px;margin:26px 0 2px;text-align:center;letter-spacing:3px;text-sh
 </style>
 </head>
 <body>
+<div id="testbanner" style="display:none;background:#2a2410;border-bottom:2px solid #ffd76a;color:#ffd76a;text-align:center;padding:6px 10px;font-size:14px"></div>
 <div id="app">
 <button class="mutebtn" id="mutebtn" onclick="toggleMute()">🔊</button>
 
@@ -124,8 +125,18 @@ h1{font-size:40px;margin:26px 0 2px;text-align:center;letter-spacing:3px;text-sh
     <div style="height:12px"></div>
     <button class="btn big" id="gatebtn" onclick="doRegister()">ENTER</button>
     <p class="sub" id="gateerr" style="color:#ff8080"></p>
-    <p class="sub">period 2 only — every signup needs oliver's approval.<br>your name is saved on this device.</p>
+    <p class="sub">period 2 only (<a href="#" onclick="show('s-why');return false;" style="color:#ffd76a">why?</a>) — every signup needs oliver's approval.<br>your name is saved on this device.</p>
   </div>
+</div>
+
+<div class="screen" id="s-why">
+  <h1 style="font-size:30px;">WHY PERIOD 2<br>ONLY?</h1>
+  <div class="card" style="text-align:left">
+    <b>two reasons:</b><br><br>
+    1. other geometry classes might be working on different topics than us — their problems would pollute our practice.<br><br>
+    2. the leaderboard, test-date banner, and study topics are tuned to <i>our</i> class&apos;s quizzes and tests. mixing in other classes would make all of that wrong.
+  </div>
+  <button class="btn" onclick="show('s-gate')">← BACK</button>
 </div>
 
 <div class="screen" id="s-pending">
@@ -674,7 +685,24 @@ function decide(uid,decision,el){
   api('decide',{key:ADMIN_KEY,uid:uid,decision:decision},function(d){if(d&&d.ok)el.remove();});
 }
 
+// ---- next quiz/test banner (from banner.json, refreshed by the daily classroom sync) ----
+var BANNER={"date": "2026-10-14", "label": "Unit 1B test"};
+function renderBanner(){
+  var el=document.getElementById('testbanner');if(!el)return;
+  if(!BANNER||!BANNER.date||!BANNER.label){el.style.display='none';return;}
+  var d=new Date(BANNER.date+'T12:00:00');
+  if(isNaN(d.getTime())){el.style.display='none';return;}
+  var now=new Date();now.setHours(0,0,0,0);
+  var days=Math.round((d-now)/86400000);
+  if(days<0){el.style.display='none';return;}
+  var datestr=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  var when=days===0?'today':days===1?'tomorrow':'in '+days+' days';
+  el.innerHTML='📝 <b>'+esc(BANNER.label)+'</b> &middot; '+datestr+' ('+when+')';
+  el.style.display='';
+}
+
 initGate();
+renderBanner();
 
 </script>
 </body>
