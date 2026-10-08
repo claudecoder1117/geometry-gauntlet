@@ -128,6 +128,18 @@ h1{font-size:40px;margin:26px 0 2px;text-align:center;letter-spacing:3px;text-sh
   </div>
 </div>
 
+<div class="screen" id="s-pending">
+  <h1 style="font-size:30px;">⏳ ON THE<br>WAITLIST</h1>
+  <div class="card">
+    <b>hey <span id="pendingname"></span> — you&apos;re signed up.</b><br><br>
+    oliver approves every signup to keep this period&nbsp;2 only.<br>
+    you&apos;ll hit the leaderboard as soon as he taps approve.
+    <div style="height:12px"></div>
+    <button class="btn big" onclick="show('s-start')">⚔️ PLAY WHILE YOU WAIT</button>
+    <p class="sub" id="pendingcheck">checking for approval…</p>
+  </div>
+</div>
+
 <div class="screen" id="s-board">
   <h1 style="font-size:30px;">🏆 PERIOD 2<br>LEADERBOARD</h1>
   <div>
@@ -542,7 +554,20 @@ function refreshMe(cb){
 
 function startPoll(){
   if(_poll||!BACKEND)return;
-  _poll=setInterval(function(){if(ME&&ME.status==='pending')refreshMe();},30000);
+  _poll=setInterval(function(){
+    if(ME&&ME.status==='pending')refreshMe(function(){
+      if(ME.status==='approved'){
+        var p=document.getElementById('s-pending');
+        if(p&&p.classList.contains('on'))show('s-start');
+        updateIdUI();
+      }
+    });
+  },15000);
+}
+
+function showPending(){
+  var n=document.getElementById('pendingname');if(n&&ME)n.textContent=ME.name;
+  show('s-pending');
 }
 
 function doRegister(){
@@ -553,7 +578,7 @@ function doRegister(){
   api('register',{name:name,ref:PENDING_REF},function(d){
     if(d&&d.ok){
       ME={uid:d.uid,name:name,status:'pending',recruits:0};saveMe();
-      show('s-start');updateIdUI();startPoll();
+      updateIdUI();startPoll();showPending();
     }else{
       btn.disabled=false;btn.textContent='ENTER';
       document.getElementById('gateerr').textContent='hmm, that didn\u2019t work — try again.';
@@ -564,8 +589,9 @@ function doRegister(){
 function initGate(){
   if(ADMIN_MODE){show('s-admin');return;}
   if(!BACKEND)return;
-  if(!ME){show('s-gate');}
-  else{refreshMe();startPoll();updateIdUI();}
+  if(!ME){show('s-gate');return;}
+  updateIdUI();startPoll();
+  refreshMe(function(){if(ME.status==='pending')showPending();});
 }
 
 // ---- stat tracking ----
