@@ -230,7 +230,7 @@ function mkQ(topic,q,correct,cands){
 const TOPICS={};
 function registerTopic(t){TOPICS[t.id]=t;}
 //__HELPERS_END__
-const MANIFEST={"active": ["midpoint", "distance", "missing-endpoint", "partition", "seg-add", "radicals", "graphing"], "archive": []};
+const MANIFEST={"active": ["midpoint", "distance", "missing-endpoint", "partition", "seg-add", "radicals", "graphing", "coord-perimeter-area"], "archive": []};
 // ---- topic: midpoint ----
 // Midpoint of a segment from two endpoints.
 registerTopic({
@@ -375,6 +375,62 @@ registerTopic({
     const ys = y >= 0 ? 'above' : 'below';
     return mkQ('GRAPHING', `A point is plotted ${Math.abs(x)} unit${Math.abs(x) === 1 ? '' : 's'} ${xs} the y-axis and ${Math.abs(y)} unit${Math.abs(y) === 1 ? '' : 's'} ${ys} the x-axis. What are its coordinates?`, PT(x, y),
       [PT(y, x), PT(-x, y), PT(x, -y), PT(-x, -y), PT(y, -x), PT(-y, x)]);
+  }
+});
+
+// ---- topic: coord-perimeter-area ----
+// Perimeter and area of rectangles and right triangles on the coordinate
+// plane (Unit 1B classwork: packet pp. 11-12 "distance, perimeter, area"
+// graph-paper work, Oct 7). All problems use integer coordinates and
+// integer answers. Original procedurally generated problems — none copy a
+// homework problem.
+registerTopic({
+  id: 'coord-perimeter-area',
+  name: 'Perimeter & Area on the Coordinate Plane',
+  tag: 'PERIM-AREA',
+  units: ['1B'],
+  added: '2026-10-13',
+  generate: function(){
+    const v = R(1, 4);
+    if (v <= 2) {
+      // axis-aligned rectangle ABCD
+      const x1 = R(-8, 2), dx = R(2, 7), x2 = x1 + dx;
+      const y1 = R(-8, 2), dy = R(2, 7), y2 = y1 + dy;
+      const verts = `A${PT(x1, y1)}, B${PT(x2, y1)}, C${PT(x2, y2)}, D${PT(x1, y2)}`;
+      if (v === 1) {
+        const area = dx * dy;
+        return mkQ('PERIM-AREA',
+          `Rectangle ABCD has vertices ${verts}. What is its area?`, String(area),
+          [String(2 * (dx + dy)), String(dx + dy), String(area + dx), String(area - dx),
+           String(area + 1), String(area - 1), String(2 * area)]);
+      }
+      const perim = 2 * (dx + dy);
+      return mkQ('PERIM-AREA',
+        `Rectangle ABCD has vertices ${verts}. What is its perimeter?`, String(perim),
+        [String(dx * dy), String(dx + dy), String(2 * dx + dy), String(dx + 2 * dy),
+         String(perim + 2), String(perim - 2)]);
+    }
+    if (v === 3) {
+      // right triangle area: horizontal base, vertical height, right angle at A or B
+      const m = pick([2, 4, 6, 8]), n = R(2, 8); // m even -> integer area
+      const x = R(-8, 9 - m), y = R(-8, 9 - n);
+      const cPt = pick([PT(x, y + n), PT(x + m, y + n)]);
+      const area = (m * n) / 2;
+      return mkQ('PERIM-AREA',
+        `Triangle ABC has vertices A${PT(x, y)}, B${PT(x + m, y)}, C${cPt}. What is its area?`,
+        String(area),
+        [String(m * n), String(m + n), String(area + 1), String(area - 1),
+         String(2 * (m + n)), String(m * n + m)]);
+    }
+    // right triangle perimeter: integer legs from a Pythagorean triple
+    const t = pick([[3, 4, 5], [6, 8, 10]]), a = t[0], b = t[1], c = t[2];
+    const x = R(-8, 9 - a), y = R(-8, 9 - b);
+    const perim = a + b + c;
+    return mkQ('PERIM-AREA',
+      `Triangle ABC has vertices A${PT(x, y)}, B${PT(x + a, y)}, C${PT(x, y + b)}. What is its perimeter?`,
+      String(perim),
+      [String((a * b) / 2), String(a + b), String(perim + 1), String(perim - 1),
+       String(a * b), String(2 * c)]);
   }
 });
 
