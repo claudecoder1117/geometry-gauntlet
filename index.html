@@ -230,7 +230,69 @@ function mkQ(topic,q,correct,cands){
 const TOPICS={};
 function registerTopic(t){TOPICS[t.id]=t;}
 //__HELPERS_END__
-const MANIFEST={"active": ["midpoint", "distance", "missing-endpoint", "partition", "seg-add", "radicals", "graphing", "coord-perimeter-area"], "archive": []};
+const MANIFEST={"active": ["parallel-transversals"], "archive": ["midpoint", "distance", "missing-endpoint", "partition", "seg-add", "radicals", "graphing", "coord-perimeter-area"]};
+// ---- topic: parallel-transversals ----
+// Parallel lines cut by a transversal — angle relationships + algebra.
+// Original, procedurally generated. Unit 2: Lines & Intro to Proof.
+registerTopic({
+  id: 'parallel-transversals',
+  name: 'Parallel Lines & Transversals',
+  tag: 'TRANSVERSALS',
+  units: ['2'],
+  added: '2026-10-14',
+  generate: function(){
+    // ---- variant 1: plain numeric — given one angle, find a related angle
+    if (R(0, 1) === 0) {
+      // relation, phrase, and whether the answer is the same angle or the supplement
+      const rels = [
+        ['corresponding to it on line m', 'same'],
+        ['alternate interior to it', 'same'],
+        ['alternate exterior to it', 'same'],
+        ['vertical to it', 'same'],
+        ['same-side interior with it', 'supp'],
+        ['forming a linear pair with it', 'supp']
+      ];
+      const rel = pick(rels);
+      // avoid X=90 (same and supp collide) and X=88/92 (dup with +/-4 distractors)
+      let X = R(30, 150);
+      while (X === 88 || X === 90 || X === 92) X = R(30, 150);
+      const answer = rel[1] === 'same' ? X : 180 - X;
+      const wrongs = rel[1] === 'same'
+        ? [180 - X, X + 4, X - 4]
+        : [X, answer + 4, answer - 4];
+      return mkQ('TRANSVERSALS',
+        `Line l and line m are parallel, cut by transversal t. On line l, an angle measures ${X}°. What is the measure of the angle ${rel[0]}?`,
+        String(answer), wrongs.map(String));
+    }
+    // ---- variant 2: algebraic — two angle expressions, solve for x
+    const cong = R(0, 1) === 0; // congruent (alternate interior) vs supplementary (same-side interior)
+    let a1, a2, b1, b2, x;
+    if (cong) {
+      // a1*x + b1 = a2*x + b2, a2 > a1, all positive, angle < 180
+      do {
+        a1 = R(1, 3); a2 = a1 + R(1, 2); x = R(10, 20); b1 = R(5, 30);
+        b2 = b1 - (a2 - a1) * x;
+      } while (b2 <= 0 || a1 * x + b1 >= 180);
+    } else {
+      // (a1*x + b1) + (a2*x + b2) = 180, integer x
+      do {
+        a1 = R(1, 4); a2 = R(1, 4); b1 = R(5, 30); b2 = R(5, 30);
+        x = (180 - b1 - b2) / (a1 + a2);
+      } while (!Number.isInteger(x) || x <= 0);
+    }
+    const relWord = cong ? 'alternate interior' : 'same-side interior';
+    // build 3 unique positive distractors deterministically
+    const d = [];
+    for (const v of [x - 1, x + 1, x - 2, x + 2]) {
+      if (v > 0 && v !== x && d.indexOf(v) === -1) d.push(v);
+      if (d.length === 3) break;
+    }
+    return mkQ('TRANSVERSALS',
+      `Lines l and m are parallel, cut by transversal t. An ${relWord} angle pair measures (${a1}x + ${b1})° and (${a2}x + ${b2})°. Find x.`,
+      String(x), d.map(String));
+  }
+});
+
 // ---- topic: midpoint ----
 // Midpoint of a segment from two endpoints.
 registerTopic({
@@ -824,7 +886,7 @@ function decide(uid,decision,el){
 }
 
 // ---- next quiz/test banner (from banner.json, refreshed by the daily classroom sync) ----
-var BANNER={"date": "2026-10-14", "label": "Unit 1B test"};
+var BANNER={};
 function renderBanner(){
   var el=document.getElementById('testbanner');if(!el)return;
   function hide(){el.style.display='none';document.body.classList.remove('has-banner');}
