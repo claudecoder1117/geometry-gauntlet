@@ -88,7 +88,7 @@ body.has-banner #app{padding-top:46px;}
   </div>
   <button class="btn big" onclick="startGame()">⚔️ CURRENT UNIT</button>
   <button class="btn" onclick="showArchive()">📦 ARCHIVE VAULT</button>
-  <button class="btn" onclick="openBoard()">🏆 PERIOD 2 LEADERBOARD</button>
+  <button class="btn" onclick="openBoard()">🏆 HOUSEN LEADERBOARD</button>
   <button class="btn" onclick="shareLink()">🔗 INVITE CLASSMATES</button>
   <p class="sub" id="sharemsg"></p>
   <p class="sub" id="idline"></p>
@@ -121,11 +121,11 @@ body.has-banner #app{padding-top:46px;}
 
 <div class="screen" id="s-gate">
   <h1 style="font-size:30px;">⚔️ GAUNTLET</h1>
-  <p class="sub">welcome to the period 2ac geometry honors study guide</p>
+  <p class="sub">welcome to the housen geometry honors study guide</p>
   <div class="card" style="text-align:left">
     &#x1f5e1;&#xfe0f; a dungeon boss-rush where every monster is a math problem from <b>our</b> class.<br>
     &#x1f504; it updates itself every day from google classroom &mdash; new topics appear as we learn them, finished ones retire to the archive vault.<br>
-    &#x1f3c6; climb the period 2 leaderboard: most correct answers and most time played, daily / weekly / all-time.
+    &#x1f3c6; climb the housen leaderboard: most correct answers and most time played, daily / weekly / all-time.
   </div>
   <div class="card">
     <b>Enter your first name to join.</b><br><br>
@@ -134,12 +134,12 @@ body.has-banner #app{padding-top:46px;}
     <div style="height:12px"></div>
     <button class="btn big" id="gatebtn" onclick="doRegister()">ENTER</button>
     <p class="sub" id="gateerr" style="color:#ff8080"></p>
-    <p class="sub">period 2 only (<a href="#" onclick="show('s-why');return false;" style="color:#ffd76a">why?</a>) — every signup needs oliver's approval.<br>your name is saved on this device.</p>
+    <p class="sub">housen's class only (<a href="#" onclick="show('s-why');return false;" style="color:#ffd76a">why?</a>) — every signup needs oliver's approval.<br>your name is saved on this device.</p>
   </div>
 </div>
 
 <div class="screen" id="s-why">
-  <h1 style="font-size:30px;">WHY PERIOD 2<br>ONLY?</h1>
+  <h1 style="font-size:30px;">WHY HOUSEN<br>ONLY?</h1>
   <div class="card" style="text-align:left">
     <b>two reasons:</b><br><br>
     1. other geometry classes might be working on different topics than us — their problems would pollute our practice.<br><br>
@@ -152,7 +152,7 @@ body.has-banner #app{padding-top:46px;}
   <h1 style="font-size:30px;">⏳ ON THE<br>WAITLIST</h1>
   <div class="card">
     <b>thanks, <span id="pendingname"></span> — your signup is pending.</b><br><br>
-    every signup is reviewed to keep this limited to period 2.<br>
+    every signup is reviewed to keep this limited to housen's class.<br>
     check back later.
     <div style="height:12px"></div>
     <button class="btn big" onclick="show('s-start')">⚔️ PLAY WHILE YOU WAIT</button>
@@ -161,7 +161,7 @@ body.has-banner #app{padding-top:46px;}
 </div>
 
 <div class="screen" id="s-board">
-  <h1 style="font-size:30px;">🏆 PERIOD 2<br>LEADERBOARD</h1>
+  <h1 style="font-size:30px;">🏆 HOUSEN<br>LEADERBOARD</h1>
   <div>
     <button class="btn tgl" data-r="day" onclick="setBoard('day')">today</button>
     <button class="btn tgl" data-r="week" onclick="setBoard('week')">this week</button>
