@@ -230,7 +230,7 @@ function mkQ(topic,q,correct,cands){
 const TOPICS={};
 function registerTopic(t){TOPICS[t.id]=t;}
 //__HELPERS_END__
-const MANIFEST={"active": ["parallel-transversals"], "archive": ["midpoint", "distance", "missing-endpoint", "partition", "seg-add", "radicals", "graphing", "coord-perimeter-area"]};
+const MANIFEST={"active": ["parallel-transversals", "crook-problems"], "archive": ["midpoint", "distance", "missing-endpoint", "partition", "seg-add", "radicals", "graphing", "coord-perimeter-area"]};
 // ---- topic: parallel-transversals ----
 // Parallel lines cut by a transversal — angle relationships + algebra.
 // Original, procedurally generated. Unit 2: Lines & Intro to Proof.
@@ -289,6 +289,87 @@ registerTopic({
     }
     return mkQ('TRANSVERSALS',
       `Lines l and m are parallel, cut by transversal t. An ${relWord} angle pair measures (${a1}x + ${b1})° and (${a2}x + ${b2})°. Find x.`,
+      String(x), d.map(String));
+  }
+});
+
+// ---- topic: crook-problems ----
+// Crook problems: angle chasing on a bent path between parallel lines.
+// Original, procedurally generated. Unit 2: Lines & Intro to Proof.
+// The move: draw an auxiliary line through the bend vertex, parallel to the
+// given lines. By alternate interior angles, the bend angle is the SUM of
+// the two given interior angles (when both are on the same side).
+registerTopic({
+  id: 'crook-problems',
+  name: 'Crook Problems',
+  tag: 'CROOK',
+  units: ['2'],
+  added: '2026-10-16',
+  generate: function(){
+    // helper: first 3 plausible distractors — unique, valid angle measures
+    // (mistake-based candidates first, safe numeric fallbacks after).
+    const three = (answer, pool) => {
+      const d = [];
+      const fb = [answer + 7, answer - 7, answer + 11, answer - 11,
+                  answer + 13, answer - 13, answer + 17, answer - 17];
+      for (const v of pool.concat(fb)) {
+        if (v > 0 && v < 180 && v !== answer && d.indexOf(v) === -1) d.push(v);
+        if (d.length === 3) break;
+      }
+      return d;
+    };
+    const v = R(0, 2);
+    if (v === 0) {
+      // ---- variant 1: find the bend angle (answer = th1 + th2)
+      let th1 = R(25, 60), th2 = R(25, 60);
+      while (th2 === th1) th2 = R(25, 60);
+      const answer = th1 + th2;
+      const wrongs = three(answer, [
+        Math.abs(th1 - th2),   // subtracted instead of adding
+        180 - (th1 + th2),     // treated the bend as supplementary
+        th1,                   // reported one given angle
+        th2,                   // reported the other given angle
+        2 * Math.min(th1, th2) // doubled the smaller angle
+      ]);
+      return mkQ('CROOK',
+        `Lines l and m are parallel. Point A is on l, point C is on m, and point B is between the two lines. The path A \u2192 B \u2192 C bends at B. Ray BA makes an interior angle of ${th1}\u00B0 with line l, and ray BC makes an interior angle of ${th2}\u00B0 with line m, on the same side of the path. What is m\u2220ABC?`,
+        String(answer), wrongs.map(String));
+    }
+    if (v === 1) {
+      // ---- variant 2: bend angle and one given angle known, find the other
+      let B, th1, th2;
+      do {
+        B = R(75, 150);
+        th1 = R(25, 60);
+        th2 = B - th1;
+      } while (th2 < 25 || th2 > 125 || th2 === th1);
+      const answer = th2;
+      const wrongs = three(answer, [
+        th1,          // reported the given angle instead
+        180 - B,      // mixed up supplementary relationships
+        B - 2 * th1,  // subtracted the given angle twice
+        th1 + 20
+      ]);
+      return mkQ('CROOK',
+        `Lines l and m are parallel. Point A is on l, point C is on m, and point B is between the two lines. The path A \u2192 B \u2192 C bends at B, with m\u2220ABC = ${B}\u00B0. Ray BA makes an interior angle of ${th1}\u00B0 with line l. What interior angle does ray BC make with line m, on the same side of the path?`,
+        String(answer), wrongs.map(String));
+    }
+    // ---- variant 3: algebraic — bend angle is (a*x + b)°, solve for x
+    let th1, th2, S, a, b, x;
+    do {
+      th1 = R(25, 55);
+      do { th2 = R(25, 55); } while (th2 === th1);
+      S = th1 + th2;
+      a = R(1, 4); b = R(5, 40);
+      x = (S - b) / a;
+    } while (b >= S || !Number.isInteger(x) || x < 1 || x > 25);
+    const d = [];
+    for (const cand of [x - 1, x + 1, x - 2, x + 2, x + 3]) {
+      if (cand > 0 && cand !== x && d.indexOf(cand) === -1) d.push(cand);
+      if (d.length === 3) break;
+    }
+    return mkQ('CROOK',
+      `Lines l and m are parallel. The path A \u2192 B \u2192 C bends at B, with point B between the two lines. Ray BA makes an interior angle of ${th1}\u00B0 with line l, and ray BC makes an interior angle of ${th2}\u00B0 with line m, on the same side of the path. The angle at B is written as (${a}x + ${b})\u00B0. Find x.`,
       String(x), d.map(String));
   }
 });
