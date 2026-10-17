@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Geometry Gauntlet</title>
+<script>window.__BUILD_ID__="6cf570cc351b";</script>
 <style>
 :root{--bg:#0b0e1f;--panel:#161b38;--panel2:#1e2450;--acc:#7c5cff;--hp:#3ddc84;--mhp:#ff4d6d;--gold:#ffd166;--txt:#eef;}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -997,5 +998,37 @@ renderBanner();
   </div>
   <p class="sub" id="nudgemsg" style="margin:6px 0 0"></p>
 </div>
+<script>
+// Auto-update: when a newer build is live, reload to it — but never in the
+// middle of a run or while someone is typing at the signup gate.
+(function(){
+  var myBuild=window.__BUILD_ID__;
+  if(!myBuild||myBuild==='dev')return;
+  var UNSAFE={'s-battle':1,'s-up':1,'s-gate':1};
+  var pendingFor=null,checking=false;
+  function unsafe(){
+    for(var id in UNSAFE){var el=document.getElementById(id);if(el&&el.classList.contains('on'))return true;}
+    return false;
+  }
+  function apply(){
+    if(!pendingFor||unsafe())return;
+    try{if(sessionStorage.getItem('upd_'+pendingFor))return;sessionStorage.setItem('upd_'+pendingFor,'1');}catch(e){}
+    fetch(location.pathname,{cache:'reload'}).then(function(){location.reload();},function(){location.reload();});
+  }
+  function check(){
+    if(checking)return;checking=true;
+    fetch(location.pathname+'?cb='+Date.now(),{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){
+      var m=t.match(/__BUILD_ID__="([0-9a-f]+)"/);
+      if(m&&m[1]!==myBuild){pendingFor=m[1];apply();}
+      checking=false;
+    },function(){checking=false;});
+  }
+  document.addEventListener('visibilitychange',function(){if(!document.hidden){check();apply();}});
+  window.addEventListener('focus',function(){check();});
+  setInterval(check,5*60*1000);
+  setInterval(apply,20*1000);
+  setTimeout(check,4000);
+})();
+</script>
 </body>
 </html>
